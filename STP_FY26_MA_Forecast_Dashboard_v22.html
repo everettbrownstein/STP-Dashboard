@@ -996,17 +996,6 @@ function getW(stage) {
   return stageWeights[stage] || 0;
 }
 
-// Returns weighted FY totals for a scenario (respects globalProbOn + stageWeights)
-function calcScenFYTotals(scKey) {
-  const sc = SCENARIOS[scKey];
-  const STAGE_LIST = ['Closed','Under LOI','Shared LOI Doc','Pre-LOI','Early-Stage Pipeline'];
-  const sum = (arr) => (arr||[0,0,0,0]).reduce((a,b)=>a+b,0);
-  const companies = STAGE_LIST.reduce((a,s) => a + sum(sc.quarterly.cos[s])   * getW(s), 0);
-  const revenue   = STAGE_LIST.reduce((a,s) => a + sum(sc.quarterly.rev[s])   * getW(s), 0);
-  const ebitda    = STAGE_LIST.reduce((a,s) => a + sum(sc.quarterly.ebitda[s])* getW(s), 0);
-  return { companies, revenue, ebitda };
-}
-
 function calcLive() {
   const STAGE_LIST = ['Closed','Under LOI','Shared LOI Doc','Pre-LOI','Early-Stage Pipeline'];
   const res = {
@@ -1141,12 +1130,9 @@ function renderSummaryTable() {
   const liveC = live.rawFy.companies;
   const liveR = live.fy.revenue;
   const liveE = live.fy.ebitda;
-  const ds   = calcScenFYTotals('downside');
-  const base = calcScenFYTotals('base');
-  const gr   = calcScenFYTotals('growth');
-  const baseC = base.companies;
-  const baseR = base.revenue;
-  const baseE = base.ebitda;
+  const baseC = SCENARIOS.base.companies;
+  const baseR = SCENARIOS.base.revenue;
+  const baseE = SCENARIOS.base.ebitda;
   const m = ebitdaMultiple;
   const ro = rolloverPct/100;
 
@@ -1156,23 +1142,23 @@ function renderSummaryTable() {
   const rows = [
     // [label, ds, base, growth, live, ytd, liveVsBase_cls, ytdVsLive_cls]
     ['Acquired Companies',
-      fmtCo(ds.companies), fmtCo(base.companies), fmtCo(gr.companies),
+      fmtCo(SCENARIOS.downside.companies), fmtCo(SCENARIOS.base.companies), fmtCo(SCENARIOS.growth.companies),
       fmtCo(liveC), fmtCo(YTD.companies), lvbClass(liveC, baseC), paceClass(YTD.companies, liveC)],
     ['Acquired Revenue ($M)',
-      fmtM(ds.revenue), fmtM(base.revenue), fmtM(gr.revenue),
+      fmtM(SCENARIOS.downside.revenue), fmtM(SCENARIOS.base.revenue), fmtM(SCENARIOS.growth.revenue),
       fmtM(liveR), fmtM(YTD.revenue), lvbClass(liveR, baseR), paceClass(YTD.revenue, liveR)],
     ['Acquired EBITDA ($M)',
-      fmtM(ds.ebitda), fmtM(base.ebitda), fmtM(gr.ebitda),
+      fmtM(SCENARIOS.downside.ebitda), fmtM(SCENARIOS.base.ebitda), fmtM(SCENARIOS.growth.ebitda),
       fmtM(liveE), fmtM(YTD.ebitda), lvbClass(liveE, baseE), paceClass(YTD.ebitda, liveE)],
     ['EBITDA Acquired YoY Growth (%)',
-      fmtPct((ds.ebitda-fy25e)/fy25e), fmtPct((base.ebitda-fy25e)/fy25e),
-      fmtPct((gr.ebitda-fy25e)/fy25e), fmtPct((liveE-fy25e)/fy25e), '—', null, null],
+      fmtPct((SCENARIOS.downside.ebitda-fy25e)/fy25e), fmtPct((SCENARIOS.base.ebitda-fy25e)/fy25e),
+      fmtPct((SCENARIOS.growth.ebitda-fy25e)/fy25e), fmtPct((liveE-fy25e)/fy25e), '—', null, null],
     ['Total Acquired EBITDA Multiplier',
-      fmtMult(ds.ebitda/fy25e), fmtMult(base.ebitda/fy25e),
-      fmtMult(gr.ebitda/fy25e), fmtMult(liveE/fy25e), '—', null, null],
+      fmtMult(SCENARIOS.downside.ebitda/fy25e), fmtMult(SCENARIOS.base.ebitda/fy25e),
+      fmtMult(SCENARIOS.growth.ebitda/fy25e), fmtMult(liveE/fy25e), '—', null, null],
     [`Capital Required @${m}x, ${Math.round((1-ro)*100)}%`,
-      fmtM(ds.ebitda*m*(1-ro)), fmtM(base.ebitda*m*(1-ro)),
-      fmtM(gr.ebitda*m*(1-ro)), fmtM(liveE*m*(1-ro)), fmtM(YTD.ebitda*m*(1-ro)), null, null],
+      fmtM(SCENARIOS.downside.ebitda*m*(1-ro)), fmtM(SCENARIOS.base.ebitda*m*(1-ro)),
+      fmtM(SCENARIOS.growth.ebitda*m*(1-ro)), fmtM(liveE*m*(1-ro)), fmtM(YTD.ebitda*m*(1-ro)), null, null],
   ];
 
   const tbody = document.getElementById('summaryBody');
@@ -1282,12 +1268,11 @@ function renderLiveDetail() {
   const liveTarget = live.rawFy.companies;
   const _pr = (lbl, val) => `<tr><td style="font-family:var(--font-sans)">${lbl}</td><td>${val}</td>${QUARTERS.slice(1).map(()=>'<td style="color:var(--text-dim)">\u2014</td>').join('')}<td style="font-weight:700">${val}</td></tr>`;
   paceHtml += _pr('Closed vs. Live Target (Co.)', liveTarget > 0 ? fmtPct(ytd.companies/liveTarget) : '\u2014');
-  const _baseTotals = calcScenFYTotals('base');
-  paceHtml += _pr('Closed vs. Base Case (Co.)', fmtPct(ytd.companies/_baseTotals.companies));
+  paceHtml += _pr('Closed vs. Base Case (Co.)', fmtPct(ytd.companies/SCENARIOS.base.companies));
   paceHtml += _pr('Closed vs. Live Target (Rev.)', live.fy.revenue > 0 ? fmtPct(ytd.revenue/live.fy.revenue) : '\u2014');
-  paceHtml += _pr('Closed vs. Base Case (Rev.)', fmtPct(ytd.revenue/_baseTotals.revenue));
+  paceHtml += _pr('Closed vs. Base Case (Rev.)', fmtPct(ytd.revenue/SCENARIOS.base.revenue));
   paceHtml += _pr('Closed vs. Live Target (EBITDA)', live.fy.ebitda > 0 ? fmtPct(ytd.ebitda/live.fy.ebitda) : '\u2014');
-  paceHtml += _pr('Closed vs. Base Case (EBITDA)', fmtPct(ytd.ebitda/_baseTotals.ebitda));
+  paceHtml += _pr('Closed vs. Base Case (EBITDA)', fmtPct(ytd.ebitda/SCENARIOS.base.ebitda));
     document.getElementById('livePaceBody').innerHTML = paceHtml;
 }
 
@@ -1316,25 +1301,24 @@ function renderScenarioTable(scKey, tbodyId) {
   }
   function secRow(t) { return `<tr class="sec-row"><td colspan="6" style="font-family:var(--font-sans)">${t}</td></tr>`; }
 
-  // Compute weighted totals (respects globalProbOn + stageWeights)
-  const wVal = (arr, s) => (arr||[0,0,0,0]).map(v => v * getW(s));
-  const coTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.cos[s]||[0,0,0,0])[i]*getW(s),0));
-  const revTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.rev[s]||[0,0,0,0])[i]*getW(s),0));
-  const ebitdaTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.ebitda[s]||[0,0,0,0])[i]*getW(s),0));
+  // Compute totals
+  const coTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.cos[s]||[0,0,0,0])[i],0));
+  const revTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.rev[s]||[0,0,0,0])[i],0));
+  const ebitdaTotals = QUARTERS.map((_,i) => STAGE_LIST.reduce((a,s)=>a+(sc.quarterly.ebitda[s]||[0,0,0,0])[i],0));
 
   let html = '';
   html += secRow('Acquired Companies (Count)');
-  STAGE_LIST.forEach(s => html += qRow(s, wVal(sc.quarterly.cos[s], s), fmtCo, {indent:true}));
+  STAGE_LIST.forEach(s => html += qRow(s, sc.quarterly.cos[s]||[0,0,0,0], fmtCo, {indent:true}));
   html += qRow('Early-Stage Pipeline Conversion', convQ, fmtPct, {isConv:true, indent:true});
   html += qRow('Acquired Companies Total', coTotals, fmtCo, {isTotal:true});
 
   html += secRow('Acquired Revenue ($M)');
-  STAGE_LIST.forEach(s => html += qRow(s, wVal(sc.quarterly.rev[s], s), fmt, {indent:true}));
+  STAGE_LIST.forEach(s => html += qRow(s, sc.quarterly.rev[s]||[0,0,0,0], fmt, {indent:true}));
   html += qRow('Early-Stage Pipeline Conversion', convQ, fmtPct, {isConv:true, indent:true});
   html += qRow('Acquired Revenue Total', revTotals, fmt, {isTotal:true});
 
   html += secRow('Acquired EBITDA ($M)');
-  STAGE_LIST.forEach(s => html += qRow(s, wVal(sc.quarterly.ebitda[s], s), fmt, {indent:true}));
+  STAGE_LIST.forEach(s => html += qRow(s, sc.quarterly.ebitda[s]||[0,0,0,0], fmt, {indent:true}));
   html += qRow('Early-Stage Pipeline Conversion', convQ, fmtPct, {isConv:true, indent:true});
   html += qRow('Acquired EBITDA Total', ebitdaTotals, fmt, {isTotal:true});
   tbody.innerHTML = html;
@@ -1425,7 +1409,7 @@ function getBaseTotal(metric) {
   const STAGE_LIST = ['Closed','Under LOI','Shared LOI Doc','Pre-LOI','Early-Stage Pipeline'];
   const acquired = STAGE_LIST.reduce((sum, s) => {
     const d = sc.quarterly[t][s] || [0,0,0,0];
-    return sum + d.reduce((a,b)=>a+b,0) * getW(s);
+    return sum + d.reduce((a,b)=>a+b,0);
   }, 0);
   return fy25val + acquired;
 }
@@ -1475,15 +1459,15 @@ function getScenWFItems(scKey, type) {
 
   STAGE_LIST.forEach(s => {
     const d = sc.quarterly[type][s] || [0,0,0,0];
-    const v = d.reduce((a,b)=>a+b, 0) * getW(s);
+    const v = d.reduce((a,b)=>a+b, 0);
     if (v > 0.001) {
       const shortLabel = {Closed:'Closed','Under LOI':'Under LOI','Shared LOI Doc':'Shared LOI','Pre-LOI':'Pre-LOI'}[s];
-      items.push({label: shortLabel, value: v, type:'increase'});
+      items.push({label: shortLabel, value: isC ? v : v, type:'increase'});
       running += v;
     }
   });
   items.push({label:'Run Rate', value: running, type:'runrate'});
-  const early = (sc.quarterly[type]['Early-Stage Pipeline']||[0,0,0,0]).reduce((a,b)=>a+b,0) * getW('Early-Stage Pipeline');
+  const early = (sc.quarterly[type]['Early-Stage Pipeline']||[0,0,0,0]).reduce((a,b)=>a+b,0);
   if (early > 0.001) {
     items.push({label:'Early Stage', value: early, type:'increase'});
     running += early;
