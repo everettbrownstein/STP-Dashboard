@@ -997,11 +997,14 @@ function getW(stage) {
 }
 
 // Scale factor for scenario quarterly arrays:
-//   cos are already the designed scenario company counts — never re-scaled.
-//   rev/ebitda are stored pre-weighted at DEFAULT_WEIGHTS; divide out the
-//   original weight then multiply by the current getW to re-scale.
+//   cos — company counts are already final counts, never re-scaled.
+//   Early-Stage Pipeline — values are conversion-rate based (like calcLive),
+//       NOT probability-weighted, so never re-scaled.
+//   Other stages' rev/ebitda — stored pre-weighted at DEFAULT_WEIGHTS;
+//       divide out the original weight then multiply by the current getW.
 function scenScale(stage, type) {
   if (type === 'cos') return 1.0;
+  if (stage === 'Early-Stage Pipeline') return 1.0;
   const orig = DEFAULT_WEIGHTS[stage];
   return orig > 0 ? getW(stage) / orig : 0;
 }
