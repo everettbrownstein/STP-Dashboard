@@ -997,14 +997,13 @@ function getW(stage) {
 }
 
 // Scale factor for scenario quarterly arrays:
-//   rev/ebitda are stored pre-weighted at DEFAULT_WEIGHTS, so divide out the
-//   original weight then multiply by the current weight (getW).
-//   cos are raw counts, so just multiply by getW directly.
+//   cos are already the designed scenario company counts — never re-scaled.
+//   rev/ebitda are stored pre-weighted at DEFAULT_WEIGHTS; divide out the
+//   original weight then multiply by the current getW to re-scale.
 function scenScale(stage, type) {
-  const w = getW(stage);
-  if (type === 'cos') return w;
+  if (type === 'cos') return 1.0;
   const orig = DEFAULT_WEIGHTS[stage];
-  return orig > 0 ? w / orig : 0;
+  return orig > 0 ? getW(stage) / orig : 0;
 }
 
 // Weighted FY totals for a scenario, respecting globalProbOn + stageWeights
