@@ -1,3 +1,6 @@
 {
-  "version": 2
+  "version": 2,
+  "rewrites": [
+    { "source": "/", "destination": "/STP_FY26_MA_Forecast_Dashboard_v22.html" }
+  ]
 }
