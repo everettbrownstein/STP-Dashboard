@@ -2024,7 +2024,9 @@ async function fetchAirtablePipeline() {
           ebitda:        f['EBITDA ($M)']  != null ? parseFloat(f['EBITDA ($M)'])  : (ref.ebitda  || null),
           airtableStage: aStage,
           newStage:      defaultNewStage,
-          targetClose:   ref.targetClose || null,
+          targetClose:   f['Expected Close']
+            ? `Q${Math.ceil((new Date(f['Expected Close']).getMonth() + 1) / 3)}-${String(new Date(f['Expected Close']).getFullYear()).slice(-2)}`
+            : (ref.targetClose || null),
           downToggle:    ref.downToggle  || false,
           baseToggle:    ref.baseToggle  || false,
           growthToggle:  ref.growthToggle|| false,

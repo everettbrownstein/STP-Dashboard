@@ -16,6 +16,7 @@ export default async function handler(req, res) {
       url.searchParams.append('fields[]', 'Revenue ($M)');
       url.searchParams.append('fields[]', 'EBITDA ($M)');
       url.searchParams.append('fields[]', 'Active Deal Stage');
+      url.searchParams.append('fields[]', 'Expected Close');
       url.searchParams.append('fields[]', 'Companies');
       url.searchParams.set('filterByFormula', "FIND('Shield TP', ARRAYJOIN({Companies}))");
       if (offset) url.searchParams.set('offset', offset);
