@@ -12,12 +12,13 @@ export default async function handler(req, res) {
   try {
     do {
       const url = new URL(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`);
-      url.searchParams.append('fields[]', 'Name');
-      url.searchParams.append('fields[]', 'Revenue ($M)');
-      url.searchParams.append('fields[]', 'EBITDA ($M)');
-      url.searchParams.append('fields[]', 'Active Deal Stage');
-      url.searchParams.append('fields[]', 'Expected Close');
-      url.searchParams.append('fields[]', 'Companies');
+      // DEBUG: fetch ALL fields to discover available field names
+      // url.searchParams.append('fields[]', 'Name');
+      // url.searchParams.append('fields[]', 'Revenue ($M)');
+      // url.searchParams.append('fields[]', 'EBITDA ($M)');
+      // url.searchParams.append('fields[]', 'Active Deal Stage');
+      // url.searchParams.append('fields[]', 'Expected Close');
+      // url.searchParams.append('fields[]', 'Companies');
       url.searchParams.set('filterByFormula', "FIND('Shield TP', ARRAYJOIN({Companies}))");
       if (offset) url.searchParams.set('offset', offset);
 
