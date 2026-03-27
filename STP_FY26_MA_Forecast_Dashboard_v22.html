@@ -2009,10 +2009,6 @@ async function fetchAirtablePipeline() {
     const json = await res.json();
     const records = json.records || [];
 
-    // Debug: find records with Expected Close
-    const withClose = records.filter(r => r.fields['Expected Close']);
-    console.log(`[Airtable] ${withClose.length}/${records.length} records have "Expected Close". Sample:`, withClose.slice(0,3).map(r => ({ name: r.fields['Name'], close: r.fields['Expected Close'] })));
-
     // Map records to dashboard schema
     return records
       .filter(r => r.fields['Name'])
