@@ -1726,7 +1726,7 @@ function renderPipeline() {
       const _ebitda = liveEbitda[d.name]!==undefined ? liveEbitda[d.name] : (d.ebitda||0);
       const wtdR = tog ? _rev*effW : 0;
       const wtdE = tog ? _ebitda*effW : 0;
-      const tc = liveTargetClose[d.name];
+      const tc = liveTargetClose[d.name] || d.targetClose || '';
       const isInact = effStage === 'Inactive';
       const isChanged = effStage !== d.newStage;
       const safeN = d.name.replace(/'/g,"\'").replace(/`/g,'\`');
