@@ -2009,6 +2009,9 @@ async function fetchAirtablePipeline() {
     const json = await res.json();
     const records = json.records || [];
 
+    // Debug: log first record's fields to verify Airtable field names
+    if (records.length) console.log('[Airtable] Sample fields:', Object.keys(records[0].fields), records[0].fields);
+
     // Map records to dashboard schema
     return records
       .filter(r => r.fields['Name'])
