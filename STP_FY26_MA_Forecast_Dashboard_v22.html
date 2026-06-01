@@ -527,8 +527,9 @@ body {
           <th class="th-gr col-gr">Growth</th>
           <th class="th-live col-live">Live Target</th>
           <th style="color:#1561DC">YTD Closed</th>
-          <th style="color:#1561DC">Live vs. Base</th>
+          <th style="color:#1561DC">YTD vs. Base</th>
           <th style="color:#1561DC">YTD vs. Live</th>
+          <th style="color:#1561DC">Live vs. Base</th>
         </tr>
       </thead>
       <tbody id="summaryBody"></tbody>
@@ -1167,26 +1168,29 @@ function renderSummaryTable() {
   // Live vs Base pace helper
   const lvbClass = (live, base) => base ? paceClass(live, base) : '';
 
+  // YTD vs Base pace helper
+  const ytbClass = (ytd, base) => base ? paceClass(ytd, base) : '';
+
   const rows = [
-    // [label, ds, base, growth, live, ytd, liveVsBase_cls, ytdVsLive_cls]
+    // [label, ds, base, growth, live, ytd, ytdVsBase_cls, ytdVsLive_cls, liveVsBase_cls]
     ['Acquired Companies',
       fmtCo(ds.companies), fmtCo(base.companies), fmtCo(gr.companies),
-      fmtCo(liveC), fmtCo(YTD.companies), lvbClass(liveC, baseC), paceClass(YTD.companies, liveC)],
+      fmtCo(liveC), fmtCo(YTD.companies), ytbClass(YTD.companies, baseC), paceClass(YTD.companies, liveC), lvbClass(liveC, baseC)],
     ['Acquired Revenue ($M)',
       fmtM(ds.revenue), fmtM(base.revenue), fmtM(gr.revenue),
-      fmtM(liveR), fmtM(YTD.revenue), lvbClass(liveR, baseR), paceClass(YTD.revenue, liveR)],
+      fmtM(liveR), fmtM(YTD.revenue), ytbClass(YTD.revenue, baseR), paceClass(YTD.revenue, liveR), lvbClass(liveR, baseR)],
     ['Acquired EBITDA ($M)',
       fmtM(ds.ebitda), fmtM(base.ebitda), fmtM(gr.ebitda),
-      fmtM(liveE), fmtM(YTD.ebitda), lvbClass(liveE, baseE), paceClass(YTD.ebitda, liveE)],
+      fmtM(liveE), fmtM(YTD.ebitda), ytbClass(YTD.ebitda, baseE), paceClass(YTD.ebitda, liveE), lvbClass(liveE, baseE)],
     ['EBITDA Acquired YoY Growth (%)',
       fmtPct((ds.ebitda-fy25e)/fy25e), fmtPct((base.ebitda-fy25e)/fy25e),
-      fmtPct((gr.ebitda-fy25e)/fy25e), fmtPct((liveE-fy25e)/fy25e), '—', null, null],
+      fmtPct((gr.ebitda-fy25e)/fy25e), fmtPct((liveE-fy25e)/fy25e), '—', null, null, null],
     ['Total Acquired EBITDA Multiplier',
       fmtMult(ds.ebitda/fy25e), fmtMult(base.ebitda/fy25e),
-      fmtMult(gr.ebitda/fy25e), fmtMult(liveE/fy25e), '—', null, null],
+      fmtMult(gr.ebitda/fy25e), fmtMult(liveE/fy25e), '—', null, null, null],
     [`Capital Required @${m}x, ${Math.round((1-ro)*100)}%`,
       fmtM(ds.ebitda*m*(1-ro)), fmtM(base.ebitda*m*(1-ro)),
-      fmtM(gr.ebitda*m*(1-ro)), fmtM(liveE*m*(1-ro)), fmtM(YTD.ebitda*m*(1-ro)), null, null],
+      fmtM(gr.ebitda*m*(1-ro)), fmtM(liveE*m*(1-ro)), fmtM(YTD.ebitda*m*(1-ro)), null, null, null],
   ];
 
   const tbody = document.getElementById('summaryBody');
@@ -1197,13 +1201,33 @@ function renderSummaryTable() {
     const grC = i===0 ? `<td class="col-gr" style="font-size:13px">${r[3]}</td>` : `<td style="font-size:13px">${r[3]}</td>`;
     const liC = i===0 ? `<td class="col-live" style="font-weight:700;font-size:13px">${r[4]}</td>` : `<td style="font-weight:700;font-size:13px">${r[4]}</td>`;
 
-    // Live vs Base cell (r[6])
+    const ytdVals  = [YTD.companies, YTD.revenue, YTD.ebitda];
     const liveVals = [liveC, liveR, liveE];
     const baseVals = [baseC, baseR, baseE];
-    const lvbCell = r[6] !== null ? (() => {
-      const lv = liveVals[i] || 0;
+
+    // YTD vs Base cell (r[6])
+    const ytbCell = r[6] !== null ? (() => {
+      const yv = ytdVals[i] || 0;
       const bv = baseVals[i] || 0;
       const cls = r[6];
+      const pct = bv ? fmtPct(yv/bv) : '—';
+      return paceBadge(cls, pct);
+    })() : '<td style="color:var(--text-dim)">—</td>';
+
+    // YTD vs Live cell (r[7])
+    const ytlCell = r[7] !== null ? (() => {
+      const yv = ytdVals[i] || 0;
+      const lv = liveVals[i] || 0;
+      const cls = r[7];
+      const pct = lv ? fmtPct(yv/lv) : '—';
+      return paceBadge(cls, pct);
+    })() : '<td style="color:var(--text-dim)">—</td>';
+
+    // Live vs Base cell (r[8])
+    const lvbCell = r[8] !== null ? (() => {
+      const lv = liveVals[i] || 0;
+      const bv = baseVals[i] || 0;
+      const cls = r[8];
       const pct = bv ? fmtPct(lv/bv) : '—';
       return paceBadge(cls, pct);
     })() : '<td style="color:var(--text-dim)">—</td>';
@@ -1212,14 +1236,9 @@ function renderSummaryTable() {
       <td style="font-family:var(--font-sans);font-size:12px;color:var(--text-primary)">${r[0]}</td>
       ${dsC}${baC}${grC}${liC}
       <td class="col-ytd" style="font-size:13px">${r[5]}</td>
+      ${ytbCell}
+      ${ytlCell}
       ${lvbCell}
-      ${r[7] !== null ? (() => {
-        const actual = [YTD.companies, YTD.revenue, YTD.ebitda][i] || 0;
-        const target = [liveC, liveR, liveE][i] || 0;
-        const cls = r[7];
-        const pct = target ? fmtPct(actual/target) : '—';
-        return paceBadge(cls, pct);
-      })() : '<td style="color:var(--text-dim)">—</td>'}
     </tr>`;
   }).join('');
 }
@@ -2174,42 +2193,45 @@ function exportLiveDashboard() {
   const sumRows = [
     [`STP FY26 M&A Summary Forecast — ${today}`],
     [],
-    ['Metric','Downside','Base Case','Growth Case','Live Target','YTD Closed','Live vs. Base','YTD vs. Live'],
+    ['Metric','Downside','Base Case','Growth Case','Live Target','YTD Closed','YTD vs. Base','YTD vs. Live','Live vs. Base'],
     ['Acquired Companies',
       SCENARIOS.downside.companies, SCENARIOS.base.companies, SCENARIOS.growth.companies,
       liveC, YTD.companies,
-      baseC ? +(liveC/baseC).toFixed(4) : '—',
-      liveC ? +(YTD.companies/liveC).toFixed(4) : '—'],
+      baseC ? +(YTD.companies/baseC).toFixed(4) : '—',
+      liveC ? +(YTD.companies/liveC).toFixed(4) : '—',
+      baseC ? +(liveC/baseC).toFixed(4) : '—'],
     ['Acquired Revenue ($M)',
       +SCENARIOS.downside.revenue.toFixed(2), +SCENARIOS.base.revenue.toFixed(2), +SCENARIOS.growth.revenue.toFixed(2),
       +liveR.toFixed(2), +YTD.revenue.toFixed(2),
-      baseR ? +(liveR/baseR).toFixed(4) : '—',
-      liveR ? +(YTD.revenue/liveR).toFixed(4) : '—'],
+      baseR ? +(YTD.revenue/baseR).toFixed(4) : '—',
+      liveR ? +(YTD.revenue/liveR).toFixed(4) : '—',
+      baseR ? +(liveR/baseR).toFixed(4) : '—'],
     ['Acquired EBITDA ($M)',
       +SCENARIOS.downside.ebitda.toFixed(2), +SCENARIOS.base.ebitda.toFixed(2), +SCENARIOS.growth.ebitda.toFixed(2),
       +liveE.toFixed(2), +YTD.ebitda.toFixed(2),
-      baseE ? +(liveE/baseE).toFixed(4) : '—',
-      liveE ? +(YTD.ebitda/liveE).toFixed(4) : '—'],
+      baseE ? +(YTD.ebitda/baseE).toFixed(4) : '—',
+      liveE ? +(YTD.ebitda/liveE).toFixed(4) : '—',
+      baseE ? +(liveE/baseE).toFixed(4) : '—'],
     ['EBITDA YoY Growth (%)',
       +((SCENARIOS.downside.ebitda-fy25e)/fy25e).toFixed(4),
       +((SCENARIOS.base.ebitda-fy25e)/fy25e).toFixed(4),
       +((SCENARIOS.growth.ebitda-fy25e)/fy25e).toFixed(4),
-      +((liveE-fy25e)/fy25e).toFixed(4), '—', '—', '—'],
+      +((liveE-fy25e)/fy25e).toFixed(4), '—', '—', '—', '—'],
     ['Total Acquired EBITDA Multiplier',
       +(SCENARIOS.downside.ebitda/fy25e).toFixed(2),
       +(SCENARIOS.base.ebitda/fy25e).toFixed(2),
       +(SCENARIOS.growth.ebitda/fy25e).toFixed(2),
-      +(liveE/fy25e).toFixed(2), '—', '—', '—'],
+      +(liveE/fy25e).toFixed(2), '—', '—', '—', '—'],
     [`Capital Required @${m}x, ${Math.round((1-ro)*100)}% ($M)`,
       +(SCENARIOS.downside.ebitda*m*(1-ro)).toFixed(2),
       +(SCENARIOS.base.ebitda*m*(1-ro)).toFixed(2),
       +(SCENARIOS.growth.ebitda*m*(1-ro)).toFixed(2),
       +(liveE*m*(1-ro)).toFixed(2),
-      +(YTD.ebitda*m*(1-ro)).toFixed(2), '—', '—'],
+      +(YTD.ebitda*m*(1-ro)).toFixed(2), '—', '—', '—'],
     [],
-    ['Note: Live vs. Base and YTD vs. Live columns are ratios (e.g. 1.05 = 105%)'],
+    ['Note: YTD vs. Base, YTD vs. Live, and Live vs. Base columns are ratios (e.g. 1.05 = 105%)'],
   ];
-  addSheet(wb, 'Summary Forecast', sumRows, [38,12,12,12,12,12,14,14]);
+  addSheet(wb, 'Summary Forecast', sumRows, [38,12,12,12,12,12,14,14,14]);
 
   // ── Sheet 2: Quarterly Detail ──────────────────────────────────────────
   const qdRows = [
