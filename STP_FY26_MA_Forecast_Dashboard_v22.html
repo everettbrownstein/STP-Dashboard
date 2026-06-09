@@ -972,10 +972,10 @@ function loadState() {
     if (typeof s.globalProbOn === 'boolean') globalProbOn = s.globalProbOn;
     if (typeof s.showBaseComparison === 'boolean') showBaseComparison = s.showBaseComparison;
   } catch(e) {}
+  // Only initialize toggles (needed for rendering); stages & targetClose
+  // are override-only — Airtable is the source of truth for those.
   PIPELINE_DATA.forEach(d => {
     if (liveToggles[d.name] === undefined) liveToggles[d.name] = d.liveToggle;
-    if (liveTargetClose[d.name] === undefined) liveTargetClose[d.name] = d.targetClose || null;
-    if (liveStages[d.name] === undefined) liveStages[d.name] = d.newStage;
   });
 }
 // Event delegation handlers (avoid template literal escaping issues)
@@ -1104,7 +1104,7 @@ function calcLive() {
     if (stage === 'Inactive') return;
 
     const w = getW(stage);
-    const tc = liveTargetClose[d.name];
+    const tc = liveTargetClose[d.name] !== undefined ? liveTargetClose[d.name] : (d.targetClose || null);
     const qi = tc ? QUARTERS.indexOf(tc) : -1;
 
     if (stage === 'Early-Stage Pipeline') {
@@ -1757,7 +1757,8 @@ function renderPipeline() {
   let filtered = _allPipe.filter(d => {
     const effStage = liveStages[d.name] || d.newStage;
     if (sfFilter !== 'All' && effStage !== sfFilter) return false;
-    if (qFilter !== 'All' && liveTargetClose[d.name] !== qFilter) return false;
+    const _tc = liveTargetClose[d.name] !== undefined ? liveTargetClose[d.name] : (d.targetClose || '');
+    if (qFilter !== 'All' && _tc !== qFilter) return false;
     if (search && !d.name.toLowerCase().includes(search)) return false;
     return true;
   });
